@@ -1,19 +1,3 @@
-
-function getQuery(){
-	let ret = Array(48)
-	for(let i=0;i<48;i++){
-		ret[i] = document.getElementById("c" + i).checked
-	}
-	return ret
-}
-
-function setState(state){
-	for(let i=0;i<48;i++){
-		document.getElementById("c" + i).checked = state[i]
-	}
-}
-
-
 function isSolved(query){
 	let numEnemy = 0
 	for(let i=0;i<48;i++) numEnemy += query[i]
@@ -216,9 +200,16 @@ function onClickClear(){
 class Target {
 	constructor(){
 		// svg の path に onclick を設定して回る
+		const isTouchDevice = !( window.ontouchstart!==null )
 		for(let i=0;i<48;i++){
 			let elem = document.getElementById(`t${i}`)
-			if (elem) elem.onclick = (() => this.onClickTarget(i))
+			if (elem){
+				if (isTouchDevice){
+					elem.ontouchend = (() => this.onClickTarget(i))
+				}else{
+					elem.onclick = (() => this.onClickTarget(i))
+				}
+			}
 		}
 		this.resetState()
 	}
