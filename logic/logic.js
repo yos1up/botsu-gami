@@ -88,7 +88,7 @@ function getMoveExplanation(index){
   }else{
     const col = index%6
     let dist = Math.floor((index - 48)/6)
-    message = `${5 - col}〜${6 - col} 時の方向の列を`
+    message = `${5 - col}時〜${6 - col}時方向の列(${["A", "B", "C", "D", "E", "F"][5 - col]})を`
     if (dist < 4){
       message += ` ${dist} マス${[
         "上", "左上", "左", "左", "左下", "下"

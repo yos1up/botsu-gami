@@ -26,5 +26,12 @@ for i in range(48):
         th2=theta2,
         id=i
     ))
+for i in range(12):
+    th = 75 - 30 * i
+    print('  <text x="{x:.2f}" y="{y:.2f}" font-size="40" text-anchor="middle" alignment-baseline="middle">{c}</text>'.format(
+        x=160*np.cos(th * np.pi / 180),
+        y=-160*np.sin(th * np.pi / 180),
+        c="ABCDEFABCDEF"[i]
+    ))
 print('</svg>')
 
