@@ -25,13 +25,13 @@ function isSolved(query){
       if (state[i*4+j]){
         for(let k=0;k<4;k++) state[i*4+k] = false
         cost++
+        if ((cost - 1) * 4 >= numEnemy) return false
         break
       }
     }
   }
-  let rest = Array(12)
+  let rest = new Array(12).fill(false)
   for(let i=0;i<12;i++){
-    rest[i] = false
     for(let j=0;j<2;j++){
       if (state[i*4+j]) rest[i] = true
     }
@@ -63,7 +63,7 @@ function rotateInPlace(state, rad, ang){
     rad: 0, 1, 2, 3
     ang: 0, 1, 2, ..., 11
   */
-  let cache = Array(12)
+  let cache = new Array(12)
   for(let i=0;i<12;i++) cache[i] = state[rad + i*4]
   for(let i=0;i<12;i++) state[rad + (i+ang)%12*4] = cache[i]
 }
@@ -73,7 +73,7 @@ function slideInPlace(state, col, dist){
     col: 0, 1, 2, 3, 4, 5
     dist: 0, 1, ..., 7
   */
-  let cache = Array(8)
+  let cache = new Array(8)
   for(let i=0;i<4;i++) cache[i] = state[(col+1) * 4 - 1 - i]
   for(let i=0;i<4;i++) cache[4 + i] = state[(col+6)%12 * 4 + i]
   for(let i=0;i<4;i++) state[(col+1) * 4 - 1 - i] = cache[(i + dist)%8]
@@ -172,38 +172,41 @@ function findSolution(query){
   // 1 手詰
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
-    query = initialState.slice()
-    moveInPlace(query, i)
-    if (isSolved(query)) return [i]
+    let state1 = initialState.slice()
+    moveInPlace(state1, i)
+    if (isSolved(state1)) return [i]
   }
 
   // 2 手詰
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
+    let state1 = initialState.slice()
+    moveInPlace(state1, i)
     for(let j=0;j<96;j++){
       if (!isNontrivialMove(j)) continue
       if (!isNormalizedOrder(i, j)) continue
-      query = initialState.slice()
-      moveInPlace(query, i)
-      moveInPlace(query, j)
-      if (isSolved(query)) return [i, j]
+      let state2 = state1.slice()
+      moveInPlace(state2, j)
+      if (isSolved(state2)) return [i, j]
     }
   }
 
   // 3 手詰
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
+    let state1 = initialState.slice()
+    moveInPlace(state1, i)
     for(let j=0;j<96;j++){
       if (!isNontrivialMove(j)) continue
       if (!isNormalizedOrder(i, j)) continue
+      let state2 = state1.slice()
+      moveInPlace(state2, j)
       for(let k=0;k<96;k++){
         if (!isNontrivialMove(k)) continue        
         if (!isNormalizedOrder(j, k)) continue
-        query = initialState.slice()
-        moveInPlace(query, i)
-        moveInPlace(query, j)
-        moveInPlace(query, k)
-        if (isSolved(query)) return [i, j, k]
+        let state3 = state2.slice()
+        moveInPlace(state3, k)
+        if (isSolved(state3)) return [i, j, k]
       }
     }
   }
