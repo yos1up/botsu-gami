@@ -1,3 +1,20 @@
+/**
+ * Get the URL parameter value
+ *
+ * @param  name {string} パラメータのキー文字列
+ * @return  url {url} 対象のURL文字列（任意）
+ */
+function getParam(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+
 function isSolved(query){
   let numEnemy = 0
   for(let i=0;i<48;i++) numEnemy += query[i]
@@ -125,8 +142,8 @@ function findSolution(query){
     メインの解く関数
     ----
     Args:
-      query: boolean[]
-        敵の配置を表す長さ 48 の配列．敵がいるところは true.
+      query: boolean[] | number[]
+        敵の配置を表す長さ 48 の配列．敵がいるところは true (truthy).
         インデックスは以下の通り
           11-12時方向の列：内側から 0, 1, 2, 3
           10-11時方向の列：内側から 4, 5, 6, 7
@@ -145,7 +162,7 @@ function findSolution(query){
            ...
            6- 7時方向の列を 0, 1, ..., 7 マス外側にスライドする: 88, 89, ..., 95
     Caution:
-      「最小手数」の解（のうちの一つ）を必ず返します．
+      3 手以内で解ける場合は，「最小手数」の解のうちの一つを必ず返します．
   */
   const initialState = query.slice() // deep copy
 
@@ -254,7 +271,27 @@ class Target {
     this.buttonState = new Array(48).fill(0)    
     for(let i=0;i<48;i++) this.redraw(i)
   }
+  setState(config){
+    /* config: boolean[] | number[] */
+    this.buttonState = config.slice() // deep copy
+    for(let i=0;i<48;i++) this.redraw(i)
+  }
 }
+
+function convertURLParameterToConfiguration(){
+  let ret = new Array(48).fill(0)
+  const fmt = getParam("fmt", location.search)
+  const config = getParam("config", location.search)
+  switch (fmt){
+    case 0:
+    default:
+      for(let i=0;i<Math.min(config.length, ret.length);i++) ret[i] = Number(config[i])
+      break
+  }
+  return ret
+}
+
+
 
 function showUsage(){
   alert(`【使い方】
@@ -263,11 +300,15 @@ function showUsage(){
 3. テキをそろえる方法が下に表示されます`)
 }
 
-
 let target = null
 
 function onLoad(){
   target = new Target()
+  const config = convertURLParameterToConfiguration()
+  if (config){
+    target.setState(config)
+    onClickSolve()
+  }
 }
 
 
