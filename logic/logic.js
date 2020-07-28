@@ -60,30 +60,77 @@ function isSolved(query){
 
 function rotateInPlace(state, rad, ang){
   /*
+  状態を in-place に操作します．リング回転
+  ----
+  Args:
+    state: number[] 
     rad: 0, 1, 2, 3
     ang: 0, 1, 2, ..., 11
+  Returns:
+    changed: boolean
+      この操作によって state が変化したか否か
   */
   let cache = new Array(12)
+  let changed = false
   for(let i=0;i<12;i++) cache[i] = state[rad + i*4]
-  for(let i=0;i<12;i++) state[rad + (i+ang)%12*4] = cache[i]
+  for(let i=0;i<12;i++) {
+    const idx = rad + (i+ang)%12*4
+    const val = cache[i]
+    if (state[idx] !== val){
+      state[idx] = val
+      changed = true
+    }
+  }
+  return changed
 }
 
 function slideInPlace(state, col, dist){
   /*
+  状態を in-place に操作します．列スライド
+  ----
+  Args:
+    state: number[] 
     col: 0, 1, 2, 3, 4, 5
     dist: 0, 1, ..., 7
+  Returns:
+    changed: boolean
+      この操作によって state が変化したか否か
   */
   let cache = new Array(8)
   for(let i=0;i<4;i++) cache[i] = state[(col+1) * 4 - 1 - i]
   for(let i=0;i<4;i++) cache[4 + i] = state[(col+6)%12 * 4 + i]
-  for(let i=0;i<4;i++) state[(col+1) * 4 - 1 - i] = cache[(i + dist)%8]
-  for(let i=0;i<4;i++) state[(col+6)%12 * 4 + i] = cache[(4 + i + dist)%8]
+  let changed = false
+  for(let i=0;i<4;i++) {
+    const idx = (col+1) * 4 - 1 - i
+    const val = cache[(i + dist)%8]
+    if (state[idx] !== val){
+      state[idx] = val
+      changed = true
+    }
+  }
+  for(let i=0;i<4;i++){
+    const idx = (col+6)%12 * 4 + i
+    const val = cache[(4 + i + dist)%8]
+    if (state[idx] !== val){
+      state[idx] = val
+      changed = true
+    } 
+  }
+  return changed
 }
 
 function moveInPlace(state, index){
-  /* index: 0, ..., 95 */
-  if (index < 48) rotateInPlace(state, index%4, Math.floor(index/4))
-  else slideInPlace(state, index%6, Math.floor((index - 48)/6))
+  /*
+  状態を in-place に操作します．
+  ----
+  Args:
+    index: 0, 1, 2, ..., 95
+  Returns:
+    (boolean)
+      この操作によって state が変化したか否か
+  */
+  if (index < 48) return rotateInPlace(state, index%4, Math.floor(index/4))
+  else return slideInPlace(state, index%6, Math.floor((index - 48)/6))
 }
 
 function getMoveExplanation(index){
@@ -142,8 +189,8 @@ function findSolution(query){
     メインの解く関数
     ----
     Args:
-      query: boolean[] | number[]
-        敵の配置を表す長さ 48 の配列．敵がいるところは true (truthy).
+      query: number[]
+        敵の配置を表す長さ 48 の配列．敵がいるところは truthy.
         インデックスは以下の通り
           11-12時方向の列：内側から 0, 1, 2, 3
           10-11時方向の列：内側から 4, 5, 6, 7
@@ -173,7 +220,7 @@ function findSolution(query){
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
     let state1 = initialState.slice()
-    moveInPlace(state1, i)
+    if (!moveInPlace(state1, i)) continue
     if (isSolved(state1)) return [i]
   }
 
@@ -181,12 +228,12 @@ function findSolution(query){
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
     let state1 = initialState.slice()
-    moveInPlace(state1, i)
+    if (!moveInPlace(state1, i)) continue
     for(let j=0;j<96;j++){
       if (!isNontrivialMove(j)) continue
       if (!isNormalizedOrder(i, j)) continue
       let state2 = state1.slice()
-      moveInPlace(state2, j)
+      if (!moveInPlace(state2, j)) continue
       if (isSolved(state2)) return [i, j]
     }
   }
@@ -195,17 +242,17 @@ function findSolution(query){
   for(let i=0;i<96;i++){
     if (!isNontrivialMove(i)) continue
     let state1 = initialState.slice()
-    moveInPlace(state1, i)
+    if (!moveInPlace(state1, i)) continue
     for(let j=0;j<96;j++){
       if (!isNontrivialMove(j)) continue
       if (!isNormalizedOrder(i, j)) continue
       let state2 = state1.slice()
-      moveInPlace(state2, j)
+      if (!moveInPlace(state2, j)) continue
       for(let k=0;k<96;k++){
         if (!isNontrivialMove(k)) continue        
         if (!isNormalizedOrder(j, k)) continue
         let state3 = state2.slice()
-        moveInPlace(state3, k)
+        if (!moveInPlace(state3, k)) continue
         if (isSolved(state3)) return [i, j, k]
       }
     }
@@ -275,23 +322,27 @@ class Target {
     for(let i=0;i<48;i++) this.redraw(i)
   }
   setState(config){
-    /* config: boolean[] | number[] */
+    /* config: number[] */
     this.buttonState = config.slice() // deep copy
     for(let i=0;i<48;i++) this.redraw(i)
   }
 }
 
 function convertURLParameterToConfiguration(){
-  let ret = new Array(48).fill(0)
   const fmt = getParam("fmt", location.search)
   const config = getParam("config", location.search)
-  switch (fmt){
-    case 0:
-    default:
-      for(let i=0;i<Math.min(config.length, ret.length);i++) ret[i] = Number(config[i])
-      break
+  if (config){
+    let ret = new Array(48).fill(0)
+    switch (fmt){
+      case 0:
+      default:
+        for(let i=0;i<Math.min(config.length, ret.length);i++) ret[i] = Number(config[i])
+        break
+    }
+    return ret
+  }else{
+    return null
   }
-  return ret
 }
 
 
