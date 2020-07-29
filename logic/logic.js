@@ -133,35 +133,63 @@ function moveInPlace(state, index){
   else return slideInPlace(state, index%6, Math.floor((index - 48)/6))
 }
 
-function getMoveExplanation(index){
+function getMoveExplanation(index, lang){
   let message = ""
   if (index < 48){
     const rad = index%4
     const ang = Math.floor(index/4)
-    message = [
-      "最も内側のリングを",
-      "内側から2番目のリングを",
-      "外側から2番目のリングを",
-      "最も外側のリングを",
-    ][rad]
-    if (ang < 6){
-      message += `反時計回りに ${ang} マス回す`
+    if (lang == "en"){
+      message += [
+        "Rotate the innermost ring",
+        "Rotate the second innermost ring",
+        "Rotate the second outermost ring",
+        "Rotate the outermost ring",
+      ][rad]
+      if (ang < 6){
+        message += ` counter-clockwise ${ang}x.`
+      }else{
+        message += ` clockwise ${12 - ang}x.`
+      }
     }else{
-      message += `時計回りに ${12 - ang} マス回す`
+      message += [
+        "最も内側のリングを",
+        "内側から2番目のリングを",
+        "外側から2番目のリングを",
+        "最も外側のリングを",
+      ][rad]
+      if (ang < 6){
+        message += `反時計回りに ${ang} マス回す`
+      }else{
+        message += `時計回りに ${12 - ang} マス回す`
+      }
     }
   }else{
     const col = index%6
     let dist = Math.floor((index - 48)/6)
-    message = `時計の${5 - col}時台の方向の列(${["A", "B", "C", "D", "E", "F"][5 - col]})を`
-    if (dist < 4){
-      message += ` ${dist} マス${[
-        "上", "左上", "左", "左", "左下", "下"
-      ][col]}へずらす`
+    if (lang == "en"){
+      message += `Slide the column ${["A", "B", "C", "D", "E", "F"][5 - col]} (at ${5 - col}:30) to the `
+      if (dist < 4){
+        message += `${[
+          "top", "upper left", "left", "left", "lower left", "bottom"
+        ][col]} ${dist}x.`
+      }else{
+        dist = 8 - dist
+        message += `${[
+          "bottom", "lower right", "right", "right", "upper right", "top"
+        ][col]} ${dist}x.`
+      }
     }else{
-      dist = 8 - dist
-      message += ` ${dist} マス${[
-        "下", "右下", "右", "右", "右上", "上"
-      ][col]}へずらす`
+      message += `列 ${["A", "B", "C", "D", "E", "F"][5 - col]} (${5 - col}時半の方向) を`
+      if (dist < 4){
+        message += ` ${dist} マス${[
+          "上", "左上", "左", "左", "左下", "下"
+        ][col]}へスライドする`
+      }else{
+        dist = 8 - dist
+        message += ` ${dist} マス${[
+          "下", "右下", "右", "右", "右上", "上"
+        ][col]}へスライドする`
+      }
     }
   }
   return message
@@ -262,19 +290,19 @@ function findSolution(query){
 }
 
 
-function onClickSolve(){
+function onClickSolve(lang){
   let query = target.getButtonState()
 
   const result = findSolution(query)
   
   let message = ""
   if (result === null){
-    message = "3手以内では整列できない"
+    message = (lang == "en") ? "No solution found within 3 moves." : "3手以内では整列できない"
   }else{
     if (result.length === 0){
-      message = "何もしないでOK"
+      message = (lang == "en") ? "No moves needed." : "何もしないでOK"
     }else{
-      message = result.map(getMoveExplanation).join("\n")
+      message = result.map((i) => getMoveExplanation(i, lang)).join("\n")
     }
   }
   document.getElementById("ta-main").value = message
@@ -347,11 +375,18 @@ function convertURLParameterToConfiguration(){
 
 
 
-function showUsage(){
-  alert(`【使い方】
+function showUsage(lang){
+  if (lang == "en"){
+    alert(`** How to Use **
+1. Tap all places occupied by enemies
+2. Press "Vellumental Power"
+3. Solution will be shown`)
+  }else{
+    alert(`【使い方】
 1. テキのいるマスをすべてタップしてください
 2. 「カミのちから」を押してください
 3. テキをそろえる方法が下に表示されます`)
+  }
 }
 
 let target = null
